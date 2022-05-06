@@ -1,0 +1,177 @@
+# F5 iRule for Mitigation of log4j Vulnerabilities
+# For additional information please see https://support.f5.com/csp/article/K59329043
+#
+# Version 2.6 - 2022-02-10 23:15 Eastern
+# - Reduced memory footprint via unset 
+# Version 2.5 - 2021-12-17 04:15 Eastern
+# - New payload seen, regexp updated
+# Version 2.4 - 2021-12-16 18:55 Eastern
+# - Optimization of regexp
+# - Additional comments for clarity
+# Version 2.3 - 2021-12-16 03:40 Eastern
+# - Moved regexp to static variable
+# - Updated regexp to handle more encodings/evasions
+# - Added controls to logging levels - beware logging the exploit to a vulnerable log server
+# - Performance improvements
+# Version 2.2 - 2021-12-13 19:00 Eastern
+# - Added PUT method payload check
+# Version 2.1 - 2021-12-13 17:00 Eastern
+# - Revision to header & body regexp for new evasions
+# - Made default URI regexp less aggressive to avoid false positives - same as header & body now
+# - Added while loop limit
+# Version 2.0 - 2021-12-11 23:40 Eastern
+# - Handling nested URI encoding
+# - Improved matching
+# Version 1.0 - 2021-12-11 06:10 Eastern
+# - Initial release
+#
+
+when RULE_INIT {
+# To switch to a much more aggressive regexp uncomment the first line and comment the second.
+#    set static::log4j_regex {(?i)(\$|\\+(0?44|([u0]00|x)24))'?(\{|\\+(0?173|([u0]00|x)7b))'?}
+    set static::log4j_regex {(?i)(\$|\\+(0?44|([u0]00|x)24))'?(\{|\\+(0?173|([u0]00|x)7b))'?\s*((j|b|\\+(0?1[5140]2|([u0]00|x)[64][a2]))|((\$|\\+(0?44|([u0]00|x)24))?'?(\{|\\+(0?173|([u0]00|x)7b))'?.+?'?(\}|\\+(0?175|([u0]00|x)7d))'?))}
+}
+
+when HTTP_REQUEST {
+# set debugLogging to 0 not to log, 1 to log without exploit, 2 to log exploit
+set debugLogging 1
+
+# URI blocking
+# Be sure you're patched for CVE-2021-22991 or remove -normalized
+    set tmpUri [HTTP::uri -normalized] 
+    set uri [URI::decode $tmpUri]
+    set loopLimit 5
+    set loopCount 1
+    while { $uri ne $tmpUri } {
+        if {$loopCount >= $loopLimit} {
+            if {$debugLogging == 1} {
+                log local0. "log4j_rce_detection drop on URI loop limit: $loopCount"
+            } 
+            if {$debugLogging == 2} {
+                log local0. "log4j_rce_detection drop on URI loop limit: $loopCount $uri"
+            } 
+            unset -nocomplain tmpUri uri loopLimit loopCount
+            drop
+            event disable all
+            return
+        } else {
+            set tmpUri $uri
+            set uri [URI::decode $tmpUri]
+            incr loopCount
+        }
+    }
+    unset -nocomplain tmpUri loopLimit loopCount
+
+    if {$uri matches_regex $static::log4j_regex} {
+        if {$debugLogging == 1} {
+            log local0. "log4j_rce_detection drop on URI"
+        } 
+        if {$debugLogging == 2} {
+            log local0. "log4j_rce_detection drop on URI: $uri"
+        } 
+        unset -nocomplain uri
+        drop
+        event disable all
+        return
+    }
+    unset -nocomplain uri
+    
+# Header blocking
+    set tmpReq [HTTP::request]
+    set req [URI::decode $tmpReq]
+    set loopLimit 5
+    set loopCount 1
+    while { $req ne $tmpReq } {
+        if {$loopCount >= $loopLimit} {
+            if {$debugLogging == 1} {
+                log local0. "log4j_rce_detection drop on header loop limit: $loopCount"
+            } 
+            if {$debugLogging == 2} {
+                log local0. "log4j_rce_detection drop on header loop limit: $loopCount $req"
+            } 
+            unset -nocomplain tmpReq req loopLimit loopCount
+            drop
+            event disable all
+            return
+        } else {
+            set tmpReq $req
+            set req [URI::decode $tmpReq]
+            incr loopCount
+        }
+    }
+    unset -nocomplain tmpReq loopLimit loopCount
+
+    if {$req matches_regex $static::log4j_regex} {
+        if {$debugLogging == 1} {
+            log local0. "log4j_rce_detection drop on header"
+        } 
+        if {$debugLogging == 2} {
+            log local0. "log4j_rce_detection drop on header: $req"
+        }
+        unset -nocomplain req
+        drop
+        event disable all
+        return
+    }
+    unset -nocomplain req
+
+# POST & PUT Payload blocking collection
+# NOTE: This only collects the first 1MB by default - edit 'collectSize' to change
+    set collectSize 1048536
+    if {([HTTP::method] eq "POST") || ([HTTP::method] eq "PUT")} {
+    # Trigger collection for up to 1MB of data
+        if {[HTTP::header "Content-Length"] ne "" && [HTTP::header "Content-Length"] <= $collectSize}{
+            set content_length [HTTP::header "Content-Length"]
+        } else {
+            set content_length $collectSize
+        }
+        # Check if $content_length is not set to 0
+        if { $content_length > 0} {
+            HTTP::collect $content_length
+        }
+    }
+}
+
+when HTTP_REQUEST_DATA {
+# POST & PUT Payload blocking
+# set debugLogging to 0 not to log, 1 to log without exploit, 2 to log exploit
+    set debugLogging 1
+
+    set tmpPayload [HTTP::payload]
+    set payload [URI::decode $tmpPayload]
+    set loopLimit 5
+    set loopCount 1
+    while { $payload ne $tmpPayload } {
+        if {$loopCount >= $loopLimit} {
+            if {$debugLogging == 1} {
+                log local0. "log4j_rce_detection drop on payload loop limit: $loopCount"
+            } 
+            if {$debugLogging == 2} {
+                log local0. "log4j_rce_detection drop on payload loop limit: $loopCount $payload"
+            }         
+            unset -nocomplain tmpPayload payload loopLimit loopCount
+            drop
+            event disable all
+            return
+        } else {
+            set tmpPayload $payload
+            set payload [URI::decode $tmpPayload]
+            incr loopCount
+        }
+    }
+    unset -nocomplain tmpPayload loopLimit loopCount
+
+    if {$payload matches_regex $static::log4j_regex} {
+        if {$debugLogging == 1} {
+            log local0. "log4j_rce_detection drop on payload"
+        } 
+        if {$debugLogging == 2} {
+            log local0. "log4j_rce_detection drop on payload: $payload"
+        } 
+        unset -nocomplain payload
+        drop
+        event disable all
+        return
+    }
+    unset -nocomplain payload
+}
