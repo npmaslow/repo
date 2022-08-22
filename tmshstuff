@@ -13,42 +13,4 @@ create ltm virtual httpgatewayvs { ip-protocol tcp destination 0.0.0.0%1:http ma
 
 create ltm profile client-ssl appsslclient cert LAB_SELFSIGN key LAB_SELFSIGN ca-file f5-ca-bundle.crt
 
-ltm virtual gateway_vs_https {
-    description aws_gateway
-    destination /aws_gateway_tenant/0.0.0.0%1:https
-    ip-protocol tcp
-    last-modified-time 2022-08-15:09:32:25
-    mask any
-    partition aws_gateway_tenant
-    persist {
-        /Common/cookie {
-            default yes
-        }
-    }
-    policies {
-        awsgatewaywafhttpsPolicy { }
-    }
-    pool tunnel_gateway
-    profiles {
-        /Common/http { }
-        /Common/serverssl {
-            context serverside
-        }
-        /Common/tcp { }
-        /Common/websecurity { }
-        ASM_wafPolicy { }
-        appclientssl {
-            context clientside
-        }
-    }
-    serverssl-use-sni disabled
-    source 0.0.0.0%1/0
-    source-port preserve-strict
-    translate-address disabled
-    translate-port disabled
-    vlans {
-        /Common/geneve-tunnel
-    }
-    vlans-enabled
-    vs-index 21
-}
+create ltm virtual httpsgatewayvs { ip-protocol tcp destination 0.0.0.0%1:https mask any policies add {httpspolicy} pool tunnel_gateway profiles add { tcp http websecurity {}  appsslclient { context clientside } serverssl { context serverside } } source 0.0.0.0%1/0 source-port preserve-strict translate-address disabled translate-port disabled vlans add { geneve-tunnel } vlans-enabled }
