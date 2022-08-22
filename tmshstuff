@@ -9,39 +9,8 @@ create ltm policy /Common/Drafts/httpspolicy controls add { asm } requires add {
 publish ltm policy /Common/Drafts/httpspolicy 
 
 
-ltm virtual gateway_vs_http {
-    description aws_gateway
-    destination /aws_gateway_tenant/0.0.0.0%1:http
-    ip-protocol tcp
-    last-modified-time 2022-08-15:08:49:48
-    mask any
-    partition aws_gateway_tenant
-    persist {
-        /Common/cookie {
-            default yes
-        }
-    }
-    policies {
-        awsgatewaywafhttpPolicy { }
-    }
-    pool tunnel_gateway
-    profiles {
-        /Common/http { }
-        /Common/tcp { }
-        /Common/websecurity { }
-        ASM_wafPolicy { }
-    }
-    serverssl-use-sni disabled
-    source 0.0.0.0%1/0
-    source-port preserve-strict
-    translate-address disabled
-    translate-port disabled
-    vlans {
-        /Common/geneve-tunnel
-    }
-    vlans-enabled
-    vs-index 20
-}
+create ltm virtual httpgatewayvs { ip-protocol tcp destination 0.0.0.0%1:http mask any policies add { httppolicy } pool tunnel_gateway profiles add { tcp http websecurity } source 0.0.0.0%1/0 source-port preserve-strict translate-address disabled translate-port disabled vlans add { geneve-tunnel } vlans-enabled }
+
 ltm profile client-ssl appclientssl {
     alert-timeout indefinite
     allow-expired-crl disabled
