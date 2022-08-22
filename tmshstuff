@@ -1,75 +1,10 @@
-ltm policy awsgatewaywafhttpPolicy {
-    controls { asm }
-    last-modified 2022-08-15:08:49:48
-    partition aws_gateway_tenant
-    requires { http }
-    rules {
-        disableWAF {
-            actions {
-                0 {
-                    asm
-                    disable
-                }
-            }
-            ordinal 1
-        }
-        enableWAF {
-            actions {
-                0 {
-                    asm
-                    enable
-                    policy /aws_gateway_tenant/aws_gateway/wafPolicy
-                }
-            }
-            conditions {
-                0 {
-                    http-header
-                    name Host
-                    contains
-                    values { app1 }
-                }
-            }
-        }
-    }
-    status legacy
-    strategy /Common/first-match
-}
-ltm policy awsgatewaywafhttpsPolicy {
-    controls { asm }
-    last-modified 2022-08-15:09:05:58
-    partition aws_gateway_tenant
-    requires { http client-ssl ssl-persistence }
-    rules {
-        disableWAF {
-            actions {
-                0 {
-                    asm
-                    disable
-                }
-            }
-            ordinal 1
-        }
-        sni0 {
-            actions {
-                0 {
-                    asm
-                    enable
-                    policy /aws_gateway_tenant/aws_gateway/wafPolicy
-                }
-            }
-            conditions {
-                0 {
-                    ssl-extension
-                    ssl-client-hello
-                    server-name
-                    values { test1.com }
-                }
-            }
-        }
-    }
-    status legacy
-    strategy /Common/first-match
-}
+create ltm policy /Common/Drafts/httppolicy controls add { asm } requires add { http } rules add { disableWAF { actions add { 0 { asm disable } } ordinal 1 } app1enableWAF { actions add { 0 { asm enable policy /Common/child_policy } } conditions add { 0 { http-header all name Host contains values  { app1 } } } } app2enableWAF { actions add { 0 { asm enable policy /Common/child_policy } } conditions add { 0 { http-header all name Host contains values  { app2 } } } } } strategy first-match
+publish ltm policy /Common/Drafts/httppolicy 
+
+create ltm policy /Common/Drafts/httpspolicy controls add { asm } requires add { http } rules add { disableWAF { actions add { 0 { asm disable } } ordinal 1 } app1enableWAF { actions add { 0 { asm enable policy /Common/child_policy } } conditions add { 0 { ssl-extension ssl-client-hello server-name values { app1.com } } } } app2enableWAF { actions add { 0 { asm enable policy /Common/child_policy } } conditions add { 0 { ssl-extension ssl-client-hello server-name values  { app2.com } } } } } strategy first-match
+publish ltm policy /Common/Drafts/httpspolicy 
+
+
 ltm virtual gateway_vs_http {
     description aws_gateway
     destination /aws_gateway_tenant/0.0.0.0%1:http
