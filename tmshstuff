@@ -1,0 +1,181 @@
+ltm policy awsgatewaywafhttpPolicy {
+    controls { asm }
+    last-modified 2022-08-15:08:49:48
+    partition aws_gateway_tenant
+    requires { http }
+    rules {
+        disableWAF {
+            actions {
+                0 {
+                    asm
+                    disable
+                }
+            }
+            ordinal 1
+        }
+        enableWAF {
+            actions {
+                0 {
+                    asm
+                    enable
+                    policy /aws_gateway_tenant/aws_gateway/wafPolicy
+                }
+            }
+            conditions {
+                0 {
+                    http-header
+                    name Host
+                    contains
+                    values { app1 }
+                }
+            }
+        }
+    }
+    status legacy
+    strategy /Common/first-match
+}
+ltm policy awsgatewaywafhttpsPolicy {
+    controls { asm }
+    last-modified 2022-08-15:09:05:58
+    partition aws_gateway_tenant
+    requires { http client-ssl ssl-persistence }
+    rules {
+        disableWAF {
+            actions {
+                0 {
+                    asm
+                    disable
+                }
+            }
+            ordinal 1
+        }
+        sni0 {
+            actions {
+                0 {
+                    asm
+                    enable
+                    policy /aws_gateway_tenant/aws_gateway/wafPolicy
+                }
+            }
+            conditions {
+                0 {
+                    ssl-extension
+                    ssl-client-hello
+                    server-name
+                    values { test1.com }
+                }
+            }
+        }
+    }
+    status legacy
+    strategy /Common/first-match
+}
+ltm virtual gateway_vs_http {
+    description aws_gateway
+    destination /aws_gateway_tenant/0.0.0.0%1:http
+    ip-protocol tcp
+    last-modified-time 2022-08-15:08:49:48
+    mask any
+    partition aws_gateway_tenant
+    persist {
+        /Common/cookie {
+            default yes
+        }
+    }
+    policies {
+        awsgatewaywafhttpPolicy { }
+    }
+    pool tunnel_gateway
+    profiles {
+        /Common/http { }
+        /Common/tcp { }
+        /Common/websecurity { }
+        ASM_wafPolicy { }
+    }
+    serverssl-use-sni disabled
+    source 0.0.0.0%1/0
+    source-port preserve-strict
+    translate-address disabled
+    translate-port disabled
+    vlans {
+        /Common/geneve-tunnel
+    }
+    vlans-enabled
+    vs-index 20
+}
+ltm profile client-ssl appclientssl {
+    alert-timeout indefinite
+    allow-expired-crl disabled
+    app-service none
+    authenticate once
+    c3d-drop-unknown-ocsp-status drop
+    c3d-ocsp none
+    ca-file none
+    cache-timeout 3600
+    cert-key-chain {
+        set0 {
+            cert testWebcert.crt
+            key testWebcert.key
+        }
+    }
+    cert-lookup-by-ipaddr-port disabled
+    cipher-group none
+    ciphers DEFAULT
+    client-cert-ca none
+    crl-file none
+    description none
+    hostname-whitelist none
+    inherit-ca-certkeychain true
+    inherit-certkeychain false
+    mode enabled
+    ocsp-stapling disabled
+    options { dont-insert-empty-fragments no-tlsv1.3 }
+    peer-cert-mode ignore
+    renegotiation enabled
+    retain-certificate true
+    server-name none
+    sni-default true
+    sni-require false
+    ssl-c3d disabled
+    ssl-forward-proxy disabled
+    ssl-forward-proxy-bypass disabled
+}
+ltm virtual gateway_vs_https {
+    description aws_gateway
+    destination /aws_gateway_tenant/0.0.0.0%1:https
+    ip-protocol tcp
+    last-modified-time 2022-08-15:09:32:25
+    mask any
+    partition aws_gateway_tenant
+    persist {
+        /Common/cookie {
+            default yes
+        }
+    }
+    policies {
+        awsgatewaywafhttpsPolicy { }
+    }
+    pool tunnel_gateway
+    profiles {
+        /Common/http { }
+        /Common/serverssl {
+            context serverside
+        }
+        /Common/tcp { }
+        /Common/websecurity { }
+        ASM_wafPolicy { }
+        appclientssl {
+            context clientside
+        }
+    }
+    serverssl-use-sni disabled
+    source 0.0.0.0%1/0
+    source-port preserve-strict
+    translate-address disabled
+    translate-port disabled
+    vlans {
+        /Common/geneve-tunnel
+    }
+    vlans-enabled
+    vs-index 21
+}
