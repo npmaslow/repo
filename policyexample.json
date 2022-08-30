@@ -1,0 +1,39 @@
+{
+    "policy": {
+        "name": "PolicyApp01",
+        "description": "PolicyApp01 Description Example",
+        "template": {
+            "name": "POLICY_TEMPLATE_RAPID_DEPLOYMENT"
+        },
+        "enforcementMode": "blocking",
+        "server-technologies": [
+            {
+                "serverTechnologyName": "MySQL"
+            }
+        ],
+        "signature-settings": {
+            "signatureStaging": false
+        },
+        "signatures": [
+            {
+                "signatureId": 200101552,
+                "enabled": false,
+                "performStaging": false
+            }
+        ],
+        "whitelist-ips": [
+            {
+                "ipAddress": "10.0.0.1",
+                "ipMask": "255.255.255.255",
+                "description": "always block this ip address",
+                "blockRequests": "always"
+            }
+        ],
+        "disallowed-geolocations": [
+            {
+                "countryName": "American Samoa"
+            }
+        ]
+    },
+    "modifications": []
+}
