@@ -1,0 +1,22 @@
+- name: create ansible1 policy
+  hosts: bigips
+  connection: local
+  gather_facts: False
+  environment:
+      F5_SERVER: "192.168.86.49"
+      F5_USER: "admin"
+      F5_PASSWORD: "totallynotrealpassword" 
+      F5_SERVER_PORT: "443"
+      F5_VALIDATE_CERTS: "false"
+ 
+  tasks:
+    - name: Create ASM policy, compact XML file
+      bigip_asm_policy_manage:
+        name: ansible1
+        template: SharePoint 2007 (http)
+
+  post_tasks:
+    - name: Save the running BIG-IP configuration to disk
+      bigip_config:
+        save: True
+      register: result
