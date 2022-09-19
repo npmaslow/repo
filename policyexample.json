@@ -35,5 +35,17 @@
             }
         ]
     },
-    "modifications": []
+    "modifications": [
+      {
+         "action": "add-or-update", 
+         "description": "Enable Evasion Technique", 
+         "entity": {
+             "description": "Directory traversals"
+         }, 
+         "entityChanges": {
+             "enabled": true
+         }, 
+         "entityType": "evasion"
+      }
+    ] 
 }
