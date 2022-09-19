@@ -6,10 +6,10 @@
 
      vars:
         my_admin: admin
-        my_password: YAYeff52022!
+        my_password: totallynotarealpassword
         ansible_host: 192.168.86.49
         ansible_user: admin
-        ansible_httpapi_password: YAYeff52022!
+        ansible_httpapi_password: totallynotarealpassword
         ansible_network_os: f5networks.f5_bigip.bigip
         ansible_httpapi_use_ssl: yes
         ansible_httpapi_validate_certs: no
@@ -20,7 +20,7 @@
        uri:
          url: 'https://{{ bigip }}/mgmt/tm/asm/policies?$select=name,id' 
          user: admin
-         password: YAYeff52022!
+         password: totallynotarealpassword
          method: GET
          validate_certs: no
          status_code: 200
@@ -36,7 +36,7 @@
        uri:
          url: "https://{{ bigip }}/mgmt/tm/asm/tasks/export-suggestions"
          user: admin
-         password: YAYeff52022!
+         password: totallynotarealpassword
          method: POST
          headers:
            "Content-Type": "application/json"
@@ -52,7 +52,7 @@
        uri:
          url: "https://{{ bigip }}/mgmt/tm/asm/tasks/export-suggestions"
          user: admin
-         password: YAYeff52022!
+         password: totallynotarealpassword
          method: GET
          validate_certs: no
          status_code: 200 
