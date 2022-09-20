@@ -27,7 +27,7 @@
          return_content: yes
        register: waf_policies
 
-     - name: Extract Policy_key/ID of Arcadia_WAF_API_policy
+     - name: Extract Policy_key/ID of WAF_API_policy
        set_fact: WAF_API_policy_ID="{{ item.id }}"
        loop: "{{ (waf_policies.content|from_json)['items'] }}"
        when: item.name == "child_policy"
