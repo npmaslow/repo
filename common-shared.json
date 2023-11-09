@@ -1,0 +1,112 @@
+{
+    "$schema": "https://raw.githubusercontent.com/F5Networks/f5-appsvcs-extension/master/schema/latest/as3-schema.json",
+    "class": "AS3",
+    "action": "deploy",
+    "persist": true,
+    "declaration": {
+        "class": "ADC",
+        "schemaVersion": "3.35.0",
+        "label": "Common Shared",
+        "remark": "Common Shared",
+        "Common": {
+            "class": "Tenant",
+            "Shared": {
+                "class": "Application",
+                "template": "shared",
+                "http_xff_standardized": {
+                    "class": "HTTP_Profile",
+                    "xForwardedFor": true
+                }, 
+                "http_xff_hsts_standardized": {
+                    "class": "HTTP_Profile",
+                    "xForwardedFor": true,
+                    "hstsInsert": true,
+                    "hstsPeriod": 157680000
+                },
+                "http_websockets_standardized": {
+                    "class": "HTTP_Profile",
+                    "xForwardedFor": true,
+                    "webSocketsEnabled": true
+                },
+                "monitor_standardized_https": {
+                    "class": "Monitor",
+                    "monitorType": "https",
+                    "send": "GET /monitor/state.html",
+                    "receive": "UP",
+                    "receiveDown": "DOWN"
+                },
+                "monitor_standardized_http": {
+                    "class": "Monitor",
+                    "monitorType": "http",
+                    "send": "GET /monitor/state.html",
+                    "receive": "UP",
+                    "receiveDown": "DOWN"
+                },
+                "approved-cipher-list-001": {
+                    "class": "Cipher_Rule",
+                    "cipherSuites": [
+                      "TLS13-AES128-GCM-SHA256",
+                      "TLS13-AES256-GCM-SHA384",
+                      "ECDHE-ECDSA-AES128-GCM-SHA256",
+                      "ECDHE-RSA-AES128-GCM-SHA256",
+                      "ECDHE-ECDSA-AES256-GCM-SHA384",
+                      "ECDHE-RSA-AES256-GCM-SHA384",
+                      "DHE-RSA-AES128-GCM-SHA256",
+                      "DHE-RSA-AES256-GCM-SHA384"
+                    ]
+                  },
+                  "approved-cipher-group-001": {
+                    "class": "Cipher_Group",
+                    "allowCipherRules": [
+                      {
+                        "use": "approved-cipher-list-001"
+                      }
+                    ]
+                  },
+                "pool_remotelogging": {
+                    "class": "Pool",
+                    "members": [
+                        {
+                            "servicePort": 514,
+                            "serverAddresses": [
+                                "10.20.30.40"
+                            ],
+                            "shareNodes": true
+                        }
+                    ]
+                },
+                "request_logging_profile": {
+                    "class": "Traffic_Log_Profile",
+                    "requestSettings": {
+                        "requestEnabled": true,
+                        "requestProtocol": "mds-tcp",
+                        "requestTemplate": "event_source=\"request_logging\",hostname=\"$BIGIP_HOSTNAME\",client_ip=\"$CLIENT_IP\",server_ip=\"$SERVER_IP\",http_method=\"$HTTP_METHOD\",http_uri=\"$HTTP_URI\",virtual_name=\"$VIRTUAL_NAME\",event_timestamp=\"$DATE_HTTP\"",
+                        "requestPool": {
+                            "use": "pool_remotelogging"
+                        }
+                    },
+                    "responseSettings": {
+                        "responseEnabled": true,
+                        "responseProtocol": "mds-tcp",
+                        "responseTemplate": "event_source=\"response_logging\",hostname=\"$BIGIP_HOSTNAME\",client_ip=\"$CLIENT_IP\",server_ip=\"$SERVER_IP\",http_method=\"$HTTP_METHOD\",http_uri=\"$HTTP_URI\",virtual_name=\"$VIRTUAL_NAME\",event_timestamp=\"$DATE_HTTP\",http_statcode=\"$HTTP_STATCODE\",http_status=\"$HTTP_STATUS\",response_ms=\"$RESPONSE_MSECS\"",
+                        "responsePool": {
+                            "use": "pool_remotelogging"
+                        }
+                    }
+                },
+                "irule_insert-client-ip": {
+                    "class": "iRule",
+                    "iRule": {
+                        "base64": "d2hlbiBIVFRQX1JFUVVFU1QgewogIEhUVFA6OmhlYWRlciByZW1vdmUgeC1jbGllbnQtaXAKICBIVFRQOjpoZWFkZXIgaW5zZXJ0IHgtY2xpZW50LWlwIFtJUDo6cmVtb3RlX2FkZHJdCn0="
+                    }
+                },
+                "irule_maintenance_page": {
+                    "class": "iRule",
+                    "iRule": {
+                        "base64": "d2hlbiBIVFRQX1JFUVVFU1QgewogICAgaWYgeyBbYWN0aXZlX21lbWJlcnMgW0xCOjpzZXJ2ZXIgcG9vbF1dID09IDAgfSB7CiAgICAgIEhUVFA6OnJlc3BvbmQgMjAwIGNvbnRlbnQgIlNvcnJ5LCB0aGlzIHBhZ2UgaXMgbm90IGN1cnJlbnRseSBhdmFpbGFibGUuIgogICAgfQp9Cg=="
+                    }
+                }
+            }
+        }
+    }
+}
