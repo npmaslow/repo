@@ -1,0 +1,38 @@
+---
+- name: Determine and act on active F5 device
+  hosts: f5_devices  # Your F5 device group in inventory
+  connection: local
+  gather_facts: false
+
+  vars:
+    provider:
+      server: "{{ inventory_hostname }}"
+      user: your_f5_username
+      password: your_f5_password # Consider using Ansible Vault for sensitive data
+
+  tasks:
+    - name: Gather F5 device information
+      f5networks.f5_modules.bigip_device_info:
+        provider: "{{ provider }}"
+      register: f5_facts
+
+    - name: Perform tasks only on the active F5 device
+      block:
+        - name: Confirm active device
+          debug:
+            msg: "Performing tasks on the active F5 device: {{ inventory_hostname }}"
+
+        # Add your F5 configuration tasks here that should only run on the active unit
+        # Example:
+        # - name: Create a test pool on the active device
+        #   f5networks.f5_modules.bigip_pool:
+        #     provider: "{{ provider }}"
+        #     name: my_active_pool
+        #     state: present
+        #     # ... other pool parameters
+      when: f5_facts.failover_state == 'HA_STATE_ACTIVE'
+
+    - name: Display message for standby devices (optional)
+      debug:
+        msg: "This F5 device ({{ inventory_hostname }}) is currently in standby mode."
+      when: f5_facts.failover_state == 'HA_STATE_STANDBY'
